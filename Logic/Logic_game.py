@@ -1,12 +1,12 @@
 class Hero:
-    def __init__(self, HP, MN, close_combat_skil, long_range_combat_skil, magic_skil):
+    def __init__(self, HP, MN, heavy_combat_skil, long_range_combat_skil, magic_skil):
         self.HP = HP
         self.MN = MN
         self.first_weapon_slot = Weapon
         self.second_weapon_slot = Weapon
         self.armor = Armor
         self.potions = {'small_XP': 0, 'medium_XP': 0, 'heavy_XP': 0, 'small_MN': 0, 'medium_MN': 0, 'heavy_MN': 0}
-        self.close_combat_skil = close_combat_skil
+        self.heavy_combat_skil = heavy_combat_skil
         self.long_range_combat_skil = long_range_combat_skil
         self.magic_skil = magic_skil
         self.dead = False
@@ -81,10 +81,12 @@ class Mag(Hero):
     def __init__(self):
         self.HP = 100
         self.MN = 200
-        self.close_combat_skil = False
+        self.heavy_combat_skil = False
         self.long_range_combat_skil = False
         self.magic_skil = True
-        super().__init__(self.HP, self.MN, self.close_combat_skil, self.long_range_combat_skil, self.magic_skil)
+        self.set_first_weapon(Weapon("Огненый шар", 12, 90))
+        self.set_second_weapon(Weapon('Кинжал', 11, 15))
+        super().__init__(self.HP, self.MN, self.heavy_combat_skil, self.long_range_combat_skil, self.magic_skil)
         self.set_armor(Armor(8, 5, 5, 45))
 
 
@@ -92,20 +94,24 @@ class Archer(Hero):
     def __init__(self):
         self.HP = 100
         self.MN = 150
-        self.close_combat_skil = False
+        self.heavy_combat_skil = False
         self.long_range_combat_skil = True
         self.magic_skil = False
-        super().__init__(self.HP, self.MN, self.close_combat_skil, self.long_range_combat_skil, self.magic_skil)
+        self.set_first_weapon(Weapon("Лук", 11, 50))
+        self.set_second_weapon(Weapon('Короткий меч', 11, 25))
+        super().__init__(self.HP, self.MN, self.heavy_combat_skil, self.long_range_combat_skil, self.magic_skil)
 
 
 class Warrior(Hero):
     def __init__(self):
         self.HP = 200
         self.MN = 100
-        self.close_combat_skil = True
+        self.heavy_combat_skil = True
         self.long_range_combat_skil = False
         self.magic_skil = False
-        super().__init__(self.HP, self.MN, self.close_combat_skil, self.long_range_combat_skil, self.magic_skil)
+        self.set_first_weapon(Weapon("Меч", 11, 40))
+        self.set_second_weapon(Weapon('Секира', 13, 100))
+        super().__init__(self.HP, self.MN, self.heavy_combat_skil, self.long_range_combat_skil, self.magic_skil)
 
 
 class Enemy:
@@ -212,10 +218,10 @@ class Item:
                 self.clas_uses = 'All'
                 self.set_weight(15)
                 return type_item
-        elif 10 <= type_item <= 12:
+        elif 10 <= type_item <= 13:
             if type_item == 10:
-                self.destination = 'CC_weapon'
-                self.clas_uses = 'Warrior'
+                self.destination = 'C_weapon'
+                self.clas_uses = 'All'
                 return type_item
             elif type_item == 11:
                 self.destination = 'LC_weapon'
@@ -224,6 +230,10 @@ class Item:
             elif type_item == 12:
                 self.destination = 'MC_weapon'
                 self.clas_uses = 'Mag'
+                return type_item
+            elif type_item == 13:
+                self.destination = 'HC_weapon'
+                self.clas_uses = 'Warrior'
                 return type_item
 
     def get_regen_HP(self):
@@ -270,9 +280,9 @@ class Armor(Item):
 
 
 class Weapon(Item):
-    def __init__(self, tipe, AP, MN_consumption):
+    def __init__(self, name, tipe, AP):
         self.AP = AP
-        self.MN_consumption = MN_consumption
+        self.name = name
         self.clas_uses = ''
         self.destination = ''
         self.type = self.specifications_item(tipe)
@@ -284,11 +294,8 @@ class Weapon(Item):
     def set_AP(self, new_AP):
         self.AP = new_AP
 
-    def get_MN_consumption(self):
-        return self.MN_consumption
-
-    def set_MN_consumption(self, new_MN_consumption):
-        self.MN_consumption = new_MN_consumption
+    def get_name(self):
+        return self.name
 
 
 class Regen(Item):
@@ -298,9 +305,3 @@ class Regen(Item):
         self.type = self.specifications_item(tipe)
         self.destination = ''
         super().__init__(self.type)
-
-
-hero = Mag()
-armor = hero.get_armor()
-print(armor.get_weight())
-print(hero.set_potions('small_MN', 2))
