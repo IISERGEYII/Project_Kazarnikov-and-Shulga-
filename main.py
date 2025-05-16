@@ -2,7 +2,7 @@ import logging
 from flask import Flask, request, jsonify
 from Logic.New_logic import Hero, The_Fallen_Guardian, The_Dark_Knight, The_Lich_King
 
-
+# https://wittingly-immortal-dolphin.cloudpub.ru/post
 class Game:
     def __init__(self):
         self.sessionStorage = {}
