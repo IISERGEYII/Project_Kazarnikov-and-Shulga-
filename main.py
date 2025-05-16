@@ -168,7 +168,55 @@ class Game:
                 '— Ты хорошо подготовился… Но что ты сделаешь, когда я загляну в твою душу?\n'
                 ' \n'
                 'Время пришло. Используй всё, что у тебя есть. Судьба этого края зависит только от тебя.\n'
-            )}
+            ),
+            4.1: ("Ты поднимаешь корону Лича… но ощущаешь, как она дрожит в твоих руках. Заклятие"
+                  " Сэра Мартена вспыхивает в памяти, как щит, а свет храма — греет душу изнутри."
+                  " Корона больше не властна над тобой.\n"
+                  'Ты стоишь посреди разрушенного зала. Ветер проносится сквозь разбитые окна, унося с собой пепел Лича.'
+                  ' Ты бросаешь корону в бездну, и в этот момент — голос, знакомый и тёплый, звучит у тебя в голове.\n'
+                  'Сэр Мартен:\n'
+                  '— Вот и всё, герой…'
+                  '— Помни: сила — не в том, чтобы удержать трон… а в том, чтобы от него отказаться.\n'
+                  '— Ты выбрал не путь вечности… а путь света.\n'
+
+                  'Ты выходишь из замка. За горизонтом — рассвет.\n'
+
+                  '— История закончилась. Но свет, что ты зажёг… поведёт других.\n'
+
+                  '→ Конец. “Ты победил… и остался собой.”"\n'),
+            4.3: ('— Трон пуст. Корона Лича зовёт. Её магия проникает в твои мысли.\n'
+                  '— Надень её...\n'
+                  '— Стань вечным.\n'
+                  'Ты не можешь сопротивляться. Что-то'
+                  ' в ней… манит. Неотвратимо. Ты поднимаешь её — и, даже не осознавая, надеваешь.\n'
+                  '— Ты сильнее Лича. Но корона — сильнее тебя.\n'
+                  '— Теперь ты — хозяин замка. Новый властелин мрака.\n'
+                  'И вдруг — голос. Тот, что ты слышал когда-то. Тихий, будто издалека. Не голос врага. Голос друга.\n'
+
+                  'Сэр Мартен (тихо, с печалью):\n'
+                  '— Я видел многих, кто пал в этом зале.\n'
+                  '— Но ты…\n'
+                  '(пауза)\n'
+                  '— Ты мог бы выбрать иначе.\n'
+
+                  'Тишина. Голос исчезает, как дым. Но в этом холоде он остаётся — как капля света,'
+                  ' что не смогла угаснуть до конца.\n'
+                  '— Цепь замкнулась. Король пал.\n'
+                  '— Да здравствует король.\n'
+
+                  '→ Конец. “Ты стал тем, кого победил.”\n'),
+            4.2: "Ты стоишь над поверженным телом врага. Его корона лежит у твоих ног. Трон пуст. Ты не знаешь,"
+                 " что должен делать… но рука сама тянется к короне."
+                 "Ты надеваешь её. И в тот миг всё становится кристально ясно: ты — победитель. Хозяин. Вечность"
+                 " принадлежит тебе.\n"
+                 "— Ты прошёл путь один. Без совета. Без веры. Без предостережения.\n"
+                 "— Ты не знал, что корона — не награда, а клеймо.\n"
+                 "— Но знание… приходит слишком поздно.\n"
+                 "Ты садишься на трон. И замок снова оживает. Не по воле зла — а по инерции проклятия.\n"
+                 "— А кто-то уже идёт по следу."
+                 "— И ты… будешь ждать."
+
+                 "→ Конец. “Ты стал тем, кого победил — не зная, что можно было иначе.”"}
 
         self.dict_character_choices = {0: {1: "Да, я готов"},
                                        1: {1: "Атаковать мечом",
@@ -208,7 +256,10 @@ class Game:
                                            2: "Атаковать арбалетом",
                                            3: "Атаковать огненым шаром",
                                            4: "Использовать 'Огонь истины'",
-                                           5: "Атаковать мощным заклинанием"}}
+                                           5: "Атаковать мощным заклинанием"},
+                                       4: {1: "Что дальше?"},
+                                       4.1: {},
+                                       4.2: {}}
 
     def get_sessionStorage(self):
         return self.sessionStorage
@@ -257,10 +308,33 @@ def main():
         citi(request.json, response)
     elif game.get_sessionStorage()[user_id]['stade'] == 3:
         battle_the_lich_king(request.json, response)
+    elif game.get_sessionStorage()[user_id]['stade'] == 4:
+        final(request.json, response)
 
     logging.info(f'Response:  {response!r}')
 
     return jsonify(response)
+
+
+def final(req, res):
+    user_id = req['session']['user_id']
+    if req['request']['original_utterance'] == "1":
+        if (game.sessionStorage[user_id]['enemy'].get_marten_sp() and
+                game.sessionStorage[user_id]['hero'].get_vulnerability_to_cold() is False):
+            game.sessionStorage[user_id]['stade'] = 4.1
+            res['response']['text'] = writing_a_text(req)
+            res['response']['end_session'] = True
+        elif (game.sessionStorage[user_id]['enemy'].get_marten_sp() is False and game.marten_spell is False and
+              game.sessionStorage[user_id]['hero'].get_vulnerability_to_cold()):
+            game.sessionStorage[user_id]['stade'] = 4.2
+            res['response']['text'] = writing_a_text(req)
+            res['response']['end_session'] = True
+        else:
+            game.sessionStorage[user_id]['stade'] = 4.3
+            res['response']['text'] = writing_a_text(req)
+            res['response']['end_session'] = True
+    else:
+        res['response']['text'] = "Выбиерете 1, чтобы узнать исход" + actions(game.get_dict_character_choices()[4])
 
 
 def introduction(req, res):
@@ -354,7 +428,8 @@ def citi(req, res):
                 f"HP у противника: {game.sessionStorage[user_id]['enemy'].get_HP()}\n"
                 f"Дистанция до противника: {game.sessionStorage[user_id]['enemy'].get_distance()}")
         else:
-            res['response']['text'] = "Скажите, когда будете готовы отправиться"
+            res['response']['text'] = "Скажите, когда будете готовы отправиться" + actions(
+                game.get_dict_character_choices()[2.51])
 
 
 def church(req, res):
@@ -396,7 +471,7 @@ def market(req, res):
         number = int(req['request']['original_utterance'])
         if game.purchased_items[number]:
             res['response']['text'] = "Вы уже купили этот предмет. Выберете другой\n" + actions(
-                game.get_dict_character_choices()[game.get_sessionStorage()[user_id][2.2]])
+                game.get_dict_character_choices()[2.2])
             return
         game.purchased_items[number] = True
         if number == 1:
@@ -471,6 +546,7 @@ def tavern(req, res):
                     return
                 game.sessionStorage[user_id]['hero'].set_coin(game.sessionStorage[user_id]['hero'].get_coin() - 1)
                 game.sessionStorage[user_id]['stade'] = 2.111
+                game.marten_spell = True
                 if game.get_completed_sections() == 2:
                     res['response']['text'] = writing_a_text(req) + ('Ты посетил все зоны в городе, пора отправлятся к'
                                                                      ' городским воротам\n') + actions(
@@ -478,7 +554,6 @@ def tavern(req, res):
                     game.sessionStorage[user_id]['stade'] = 2.4
                 else:
                     game.completed_tavern = True
-                    game.not_marten_spell = True
                     res['response']['text'] = writing_a_text(req) + actions(game.get_dict_character_choices()[2])
                     game.completed_sections += 1
                     game.sessionStorage[user_id]['stade'] = 2
@@ -561,35 +636,26 @@ def battle_the_lich_king(req, res):
     if attack in ['1', '2', '3', '4', '5']:
         if attack == '4':
             if game.marten_spell is False:
-                res['response']['text'] = "Вы не поговрили с Мартеном и не можете использовать 'Огонь веры'" + actions(
+                res['response']['text'] = "Вы не поговорили с Мартеном или уже использовали 'Огонь истины'" + actions(
                     game.get_dict_character_choices()[game.sessionStorage[user_id]['stade']])
                 return
+            else:
+                game.marten_spell = False
         if attack == '5':
             if game.powerful_spell is False:
-                res['response']['text'] = "Вы не купили мощьное заклинание и не можете его использовать" + actions(
+                res['response']['text'] = "Заклинание нет в наличии, используйте другое оружие!" + actions(
                     game.get_dict_character_choices()[game.sessionStorage[user_id]['stade']])
                 return
+            else:
+                game.powerful_spell = False
         result_battle = game.sessionStorage[user_id]['enemy'].battle(int(attack), game.sessionStorage[user_id]['hero'])
         if game.sessionStorage[user_id]['hero'].get_dead():
             res['response']['text'] = result_battle
             res['response']['end_session'] = True
             return
         if game.sessionStorage[user_id]['enemy'].get_Dead():
-            if game.sessionStorage[user_id]['enemy'].self.marten_spell is True and game.sessionStorage[user_id][
-                'hero'].self.vulnerability_to_cold is False:
-                res['response']['text'] = (
-                    'Ты наносишь последний удар. Лич рушится, его тело исчезает в вихре инея и праха. Корона падает к'
-                    ' твоим ногам. Вокруг — мрак и молчание. Ты остался один.\n'
-
-                    '— Трон пуст. Корона зовёт. Её магия проникает в твои мысли.\n'
-                    '— Надень её...\n'
-                    '— Стань вечным.\n'
-                    'Ты поднимаешь корону… но ощущаешь, как она дрожит в твоих руках. Заклятие Сэра Мартена вспыхивает'
-                    ' в памяти, как щит, а свет храма — греет душу изнутри. Корона больше не властна над тобой.\n'
-                    'Ты бросаешь корону в ледяную бездну.Слышится отдалённый визг, будто сама тьма теряет силу.Ты покидаешь тронный зал — человеком.'
-
-                    '→ Конец.“Ты победил… и остался собой.”'
-                )
+            res['response']['text'] = result_battle + actions(game.get_dict_character_choices()[3.1])
+            game.sessionStorage[user_id]['stade'] = 4
         else:
             res['response']['text'] = result_battle + actions(
                 game.get_dict_character_choices()[game.sessionStorage[user_id]['stade']])
