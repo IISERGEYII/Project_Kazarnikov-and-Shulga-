@@ -5,7 +5,7 @@ class Hero:
         self.first_weapon_slot = Weapon
         self.second_weapon_slot = Weapon
         self.armor = Armor
-        self.potions = {'small_XP': 0, 'medium_XP': 0, 'heavy_XP': 0, 'small_MN': 0, 'medium_MN': 0, 'heavy_MN': 0}
+        self.inventory = {}
         self.heavy_combat_skil = heavy_combat_skil
         self.long_range_combat_skil = long_range_combat_skil
         self.magic_skil = magic_skil
@@ -27,7 +27,11 @@ class Hero:
         return self.second_weapon_slot
 
     def set_first_weapon(self, weapon):
-        self.first_weapon_slot = weapon
+        if weapon.get_rwo_handed():
+            self.first_weapon_slot = weapon
+            self.second_weapon_slot = weapon
+        else:
+            self.first_weapon_slot = weapon
 
     def set_second_weapon(self, weapon):
         self.second_weapon_slot = weapon
@@ -62,66 +66,88 @@ class Hero:
     def set_armor(self, new_armor):
         self.armor = new_armor
 
-    def attack(self, enemy, slot):
-        if slot == 1:
-            weapon = self.first_weapon_slot
-        else:
-            weapon = self.second_weapon_slot
-
-        self.set_MN(self.get_MN() - weapon.get_MN_consumption())
-        if enemy.get_HP() <= 0:
-            enemy.set_Dead()
-        else:
-            self.set_HP(self.get_HP() - self)
-            if self.get_HP():
-                self.set_dead()
+    def battle(self, enemy, slot, tactic_weapon):
+        if slot in "first":
+            weapon = self.get_first_weapon()
 
 
 class Mag(Hero):
-    def __init__(self):
+    def __init__(self, FW, SW):
         self.HP = 100
         self.MN = 200
         self.heavy_combat_skil = False
         self.long_range_combat_skil = False
         self.magic_skil = True
-        self.set_first_weapon(Weapon("Огненый шар", 12, 90))
-        self.set_second_weapon(Weapon('Кинжал', 11, 15))
+        self.set_first_weapon(FW)
+        self.set_second_weapon(SW)
         super().__init__(self.HP, self.MN, self.heavy_combat_skil, self.long_range_combat_skil, self.magic_skil)
         self.set_armor(Armor(8, 5, 5, 45))
 
 
-class Archer(Hero):
-    def __init__(self):
+class Hunter(Hero):
+    def __init__(self, FW, SW):
         self.HP = 100
         self.MN = 150
         self.heavy_combat_skil = False
         self.long_range_combat_skil = True
         self.magic_skil = False
-        self.set_first_weapon(Weapon("Лук", 11, 50))
-        self.set_second_weapon(Weapon('Короткий меч', 11, 25))
+        self.set_first_weapon(FW)
+        self.set_second_weapon(SW)
         super().__init__(self.HP, self.MN, self.heavy_combat_skil, self.long_range_combat_skil, self.magic_skil)
 
 
-class Warrior(Hero):
-    def __init__(self):
+class Mercenary(Hero):
+    def __init__(self, FW, SW):
         self.HP = 200
         self.MN = 100
         self.heavy_combat_skil = True
         self.long_range_combat_skil = False
         self.magic_skil = False
-        self.set_first_weapon(Weapon("Меч", 11, 40))
-        self.set_second_weapon(Weapon('Секира', 13, 100))
+        self.set_first_weapon(FW)
+        self.set_second_weapon(SW)
         super().__init__(self.HP, self.MN, self.heavy_combat_skil, self.long_range_combat_skil, self.magic_skil)
 
 
 class Enemy:
-    def __init__(self, HP, AP, RCC, RLC, RMC):
+    def __init__(self, HP, AP, RCC, RLC, RMC, tipe):
         self.HP = HP
         self.AP = AP
         self.resistance_CC = RCC
         self.resistance_LC = RLC
         self.resistance_MC = RMC
+        self.range = 0
+        self.distance = 0
+        self.movement = 0
+        self.status = ""
+        self.tipe = self.init_type(tipe)
         self.dead = False
+
+    def init_type(self, tipe):
+        if tipe == 1:
+            self.status = "быстрый"
+            self.movement = -2
+            self.distance = 3
+            self.range = 1
+        elif tipe == 2:
+            self.status = "тяжёлый"
+            self.movement = -1
+            self.distance = 3
+            self.range = 0
+        elif tipe == 3:
+            self.status = "выносливый"
+            self.movement = -2
+            self.distance = 3
+            self.range = 0
+        elif tipe == 4:
+            self.status = "лучник"
+            self.movement = 1
+            self.distance = 2
+            self.range = 3
+        elif tipe == 4:
+            self.status = "лучник"
+            self.movement = 0
+            self.distance = 3
+            self.range = 5
 
     def get_HP(self):
         return self.HP
@@ -167,6 +193,7 @@ class Item:
         self.clas_uses = ''
         self.destination = ''
         self.weight = 0
+        self.tactic = {}
         self.type = self.specifications_item(type_item)
 
     def specifications_item(self, type_item):
@@ -221,18 +248,35 @@ class Item:
         elif 10 <= type_item <= 13:
             if type_item == 10:
                 self.destination = 'C_weapon'
+                self.tactic = {'Защита': Tactics(["быстрый"], ["выносливый"], 1, 115),
+                               'Штурм': Tactics(["выносливый", 'лучник'], ["тяжёлый"],
+                                                1, 90, -1),
+                               'Износ': Tactics(["тяжёлый", "маг"], ["быстрый"], 1, 95)}
                 self.clas_uses = 'All'
                 return type_item
             elif type_item == 11:
                 self.destination = 'LC_weapon'
+                self.tactic = {'Прицельный залп': Tactics(["выносливый, маг"], ["быстрый"], 2,
+                                                          100),
+                               'Град стрел': Tactics(["быстрый", 'лучник'], ["тяжёлый"], 2,
+                                                     80),
+                               'Отскок': Tactics(["тяжёлый"], ["выносливый"], 2, 110,
+                                                 1)}
                 self.clas_uses = 'Archer'
                 return type_item
             elif type_item == 12:
                 self.destination = 'MC_weapon'
                 self.clas_uses = 'Mag'
+                self.tactic = {'Концентрация': Tactics(["тяжёлый, маг"], ["быстрый"], 3, 85),
+                               'Непрерывность': Tactics(["быстрый"], ["выносливый"], 3, 120),
+                               'Быстрота': Tactics(["выносливый", "лучник"], ["тяжёлый"], 1, 100)}
                 return type_item
             elif type_item == 13:
                 self.destination = 'HC_weapon'
+                self.tactic = {'Полная защита': Tactics(["быстрый"], ["выносливый"], 4, 150),
+                               'Осторожное передвижение': Tactics(["выносливый", 'лучник'], ["тяжёлый"],
+                                                                  4, 125, -1),
+                               'Разящий удар': Tactics(["тяжёлый", "маг"], ["быстрый"], 1, 110)}
                 self.clas_uses = 'Warrior'
                 return type_item
 
@@ -280,11 +324,14 @@ class Armor(Item):
 
 
 class Weapon(Item):
-    def __init__(self, name, tipe, AP):
+    def __init__(self, name, tipe, AP, MN, two_handed=False):
         self.AP = AP
+        self.MN = MN
         self.name = name
         self.clas_uses = ''
         self.destination = ''
+        self.tactic = {}
+        self.two_handed = two_handed
         self.type = self.specifications_item(tipe)
         super().__init__(self.type)
 
@@ -297,6 +344,9 @@ class Weapon(Item):
     def get_name(self):
         return self.name
 
+    def get_rwo_handed(self):
+        return self.two_handed
+
 
 class Regen(Item):
     def __init__(self, tipe):
@@ -305,3 +355,28 @@ class Regen(Item):
         self.type = self.specifications_item(tipe)
         self.destination = ''
         super().__init__(self.type)
+
+
+class Tactics:
+    def __init__(self, effective, not_effective, tipe, protection, movement=0):
+        self.effective = effective
+        self.not_effective = not_effective
+        self.baf = 0
+        self.debaf = 0
+        self.protection = protection
+        self.movement = movement
+        self.tipe = self.init_type(tipe)
+
+    def init_type(self, tipe):
+        if tipe == 1:
+            self.baf = 130
+            self.debaf = 60
+        elif tipe == 2:
+            self.baf = 150
+            self.debaf = 50
+        elif tipe == 3:
+            self.baf = 130
+            self.debaf = 70
+        elif tipe == 4:
+            self.baf = 125
+            self.debaf = 65
